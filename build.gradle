@@ -1,0 +1,60 @@
+apply from: 'versions.gradle'
+apply from: 'deps.gradle'
+if (file('local.gradle').exists()) {
+    apply from: 'local.gradle'
+}
+
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.1.4'
+        classpath "jp.classmethod.aws:gradle-aws-plugin:0.31"
+    }
+}
+
+allprojects {
+    repositories {
+        mavenLocal()
+        google()
+        jcenter()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+def isReleaseBuild() {
+    return isTag() && !isSnapshot()
+}
+
+def isSnapshot() {
+    return version.contains("SNAPSHOT")
+}
+
+boolean isTravis() {
+    return System.getenv('TRAVIS_BUILD_NUMBER') ? true : false
+}
+
+boolean isTag() {
+    def tag = System.getenv('TRAVIS_TAG')
+    return !(tag == null || tag.isEmpty())
+}
+
+def buildNumber() {
+    return System.getenv('TRAVIS_BUILD_NUMBER') ?: "0"
+}
+
+subprojects {
+    project.configurations.all {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'com.android.support'
+                    && !details.requested.name.contains('support-v4') ) {
+                details.useVersion "27.1.1"
+            }
+        }
+    }
+}
